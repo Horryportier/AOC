@@ -86,6 +86,7 @@ pub fn res(input: Vec<u8>) -> usize {
                             }
                     }
                 }
+                found_gerans.sort();
                 found_gerans.dedup();
                 if found_gerans.len() == 2 {
                     valid_gears_rations
