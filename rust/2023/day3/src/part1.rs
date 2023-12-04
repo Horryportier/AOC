@@ -1,132 +1,108 @@
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+#[allow(dead_code)]
+struct Nums {
+    num: usize,
+    start: usize,
+    end: usize,
+}
+
 pub fn res(input: Vec<u8>) -> usize {
-    let mut num_map: Vec<usize> = [].into();
-    for c in input.iter() {
+    let mut nums: Vec<Nums> = Vec::new();
+    let mut tmp_num = Vec::new();
+    for (i, c) in input.iter().enumerate() {
         match c {
-            b'\n' => num_map.push(2),
-            b'.' => num_map.push(0),
-            b'0'..=b'9' => num_map.push(1),
-            _ => num_map.push(0),
-        }
-    }
-    let mut symbol_map: Vec<usize> = [].into();
-    for c in input.iter() {
-        match c {
-            b'\n' => symbol_map.push(2),
-            b'.' => symbol_map.push(0),
-            b'0'..=b'9' => symbol_map.push(0),
-            _ => symbol_map.push(1),
+            b'0'..=b'9' => {
+                tmp_num.push(c.clone());
+            }
+            _ => {
+                if !tmp_num.is_empty() {
+                    nums.push(Nums {
+                        num: String::from_utf8(tmp_num.clone())
+                            .unwrap()
+                            .parse::<usize>()
+                            .unwrap(),
+                        start: (i as isize - tmp_num.len() as isize) as usize,
+                        end: i - 1,
+                    });
+                    tmp_num = vec![];
+                }
+            }
         }
     }
 
-    let mut line_len = 0;
-    for (i, t) in symbol_map.iter().enumerate() {
-        if *t == 2 {
-            line_len = i;
-            break;
-        }
-    }
+    let new_line_pos = input.iter().position(|&x| x == b'\n').unwrap() as isize;
 
-    let mut revesed_symbol_map: Vec<usize> = vec![0; symbol_map.len()];
-    for (i, b) in symbol_map.iter().enumerate() {
+    //println!("all_nums:\n {:#?}", nums);
+
+    let mut valid_nums = Vec::new();
+
+    for (i, c) in input.iter().enumerate() {
         let i = i as isize;
-        let line_len = line_len as isize;
-        let itc: [isize; 8] = [
+        let idx_to_cheak: Vec<isize> = vec![
             i - 1,
             i + 1,
-            i - line_len,
-            i - line_len - 1,
-            i - line_len - 2,
-            i + line_len,
-            i + line_len + 1,
-            i + line_len + 2,
+            i - new_line_pos,
+            i + new_line_pos,
+            i - new_line_pos - 1,
+            i + new_line_pos + 1,
+            i - new_line_pos - 2,
+            i + new_line_pos + 2,
         ];
-        if *b == 1 {
-            for idx in itc.into_iter() {
-                if !(idx as usize > symbol_map.len() - 1) {
-                    revesed_symbol_map[idx as usize] = 1
+        match c {
+            b'0'..=b'9' | b'.' | b'\n' => (),
+            _ => {
+                for idx in &idx_to_cheak {
+                    let idx = *idx as usize;
+                    for num in nums.iter() {
+                        if (idx >= num.start) && (idx <= num.end) {
+                            valid_nums.push(num);
+                        }
+                    }
                 }
             }
-        } else if *b == 2 {
-            revesed_symbol_map[i as usize] = 2
         }
     }
-
-    let pp = |x: Vec<usize>| {
-        x.iter().for_each(|x| {
-            if *x == 2 {
-                println!("")
-            } else {
-                print!("{}", x)
-            }
-        })
-    };
-    println!("symbol area");
-    pp(revesed_symbol_map.clone());
-    println!("nums");
-    pp(num_map.clone());
-
-    let found = num_map
-        .iter()
-        .enumerate()
-        .map(|(i, x)| match (x, revesed_symbol_map[i]) {
-            (0, 0) => 0,
-            (1, 0) => 0,
-            (0, 1) => 0,
-            (1, 1) => 1,
-            (2, 2) => 2,
-            (_, _) => 0,
-        })
-        .collect::<Vec<usize>>();
-
-    let mut nums: Vec<String> = Vec::new();
-    println!("found nums");
-    let mut visited: Vec<usize> = vec![0; input.len()];
-    for (i, f) in found.iter().enumerate() {
-        let mut curr_visited = false; 
+    let mut valid_gears_rations: Vec<usize> = Vec::new();
+    for (i, c) in input.iter().enumerate() {
         let i = i as isize;
-        if *f == 1 {
-        //walk left
-        let mut left_idx = 0;
-        let mut left: Vec<u8> = Vec::new();
-        let mut lb = true;
-        while  lb {
-            let of_idx = (i - left_idx) as usize;
-            match num_map.get(of_idx) {
-                    Some(x) =>  match (x, visited[of_idx] ) {
-                        (1, 0) => {left.push(input[of_idx]); left_idx +=1; visited[of_idx] = 1; },
-                        (1, 1) => {lb = false;  curr_visited = true},
-                        _ => lb = false
+        let idx_to_cheak: Vec<isize> = vec![
+            i - 1,
+            i + 1,
+            i - new_line_pos,
+            i + new_line_pos,
+            i - new_line_pos - 1,
+            i + new_line_pos + 1,
+            i - new_line_pos - 2,
+            i + new_line_pos + 2,
+        ];
+        let mut found_gerans: Vec<Nums> = Vec::new();
+        match c {
+            b'*' => {
+                for idx in idx_to_cheak {
+                    for num in nums.iter() {
+                            let idx = idx as usize;
+                            if (idx >= num.start) && (idx <= num.end) {
+                                found_gerans.push(num.clone())
+                            }
                     }
-                    None => lb = false
                 }
-        }
-        left.reverse();
-        
-
-        //walk right
-        let mut right_idx = 1;
-        let mut right: Vec<u8> = Vec::new();
-        let mut rb = true;
-        while  rb {
-            let of_idx = (i + right_idx) as usize;
-            match num_map.get(of_idx) {
-                    Some(x) =>  match (x, visited[of_idx]) {
-                        (1,0) => {right.push(input[of_idx]); right_idx +=1; visited[of_idx] = 1},
-                        (1,1) => {rb = true; curr_visited = true},
-                        _ => rb = false
-                    }
-                    None => rb = false
+                found_gerans.dedup();
+                if found_gerans.len() == 2 {
+                    valid_gears_rations
+                        .push(found_gerans.first().unwrap().num * found_gerans.last().unwrap().num)
                 }
-        }
-        left.append(&mut right);
-
-            if !curr_visited  {
-        nums.push(String::from_utf8(left).unwrap());
             }
+            _ => (),
         }
     }
-    pp(found);
-    println!("nums {:?}", nums);
-
-    return usize::MAX;
+    println!(
+        "gears {:?}",
+        valid_gears_rations.iter().fold(0, |accum, &num| accum as usize + num)
+    );
+    valid_nums.sort();
+    valid_nums.dedup();
+    //println!("{:?}", valid_nums);
+    valid_nums
+        .iter()
+        .fold(0, |accum, &num| accum as usize + num.num)
 }
